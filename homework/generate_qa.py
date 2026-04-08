@@ -161,15 +161,17 @@ def extract_kart_objects(
         frame_detections = info["detections"][view_index]
     else:
         print(f"Warning: View index {view_index} out of range for detections")
-        return np.array(pil_image)
+        return []
 
     # Calculate scaling factors
     scale_x = img_width / ORIGINAL_WIDTH
     scale_y = img_height / ORIGINAL_HEIGHT
-    image_center_x =[]
-    image_center_y = 
+    img_cx= img_width / 2
+    img_cy = img_height / 2
 
     karts = []
+    is_center_idx = -1
+    smallest_dist = float("inf")
     for detection in frame_detections:
       class_id, track_id, x1, y1, x2, y2 = detection
       class_id = int(class_id)
@@ -191,12 +193,35 @@ def extract_kart_objects(
       # skip if not within image (out of bounds check)
       if x2_scaled < 0 or x1_scaled > img_width or y2_scaled < 0 or y1_scaled > img_height:
         continue
-
-      karts.append()
-
       
+      # get centers
+      cx = (x1_scaled + x2_scaled) // 2
+      cy = (y1_scaled + y2_scaled) // 2
 
-  
+      # List of kart objects, each containing:
+      #   - instance_id: The track ID of the kart
+      #   - kart_name: The name of the kart
+      #   - center: (x, y) coordinates of the kart's center
+      #   - is_center_kart: Boolean indicating if this is the kart closest to image center
+      karts.append(
+        {
+          "instance_id": track_id,
+          "kart_name": info['karts'][track_id],
+          "center": (cx, cy), 
+          "is_center_kart": False 
+        }
+      )
+
+      # check if closest to center
+      eucli_dist = np.sqrt((cx - img_cx)**2 + (cy - img_cy)**2)
+      if eucli_dist < smallest_dist:
+        smallest_dist = eucli_dist
+        is_center_idx = len(karts) - 1
+
+    if is_center_idx != -1:
+      karts[is_center_idx]['is_center_kart'] = True
+
+    return karts
 
 
 def extract_track_info(info_path: str) -> str:
