@@ -152,7 +152,51 @@ def extract_kart_objects(
         - is_center_kart: Boolean indicating if this is the kart closest to image center
     """
 
-    raise NotImplementedError("Not implemented")
+    # Read the info.json file
+    with open(info_path) as f:
+      info = json.load(f)
+
+    # Get the correct detection frame based on view index
+    if view_index < len(info["detections"]):
+        frame_detections = info["detections"][view_index]
+    else:
+        print(f"Warning: View index {view_index} out of range for detections")
+        return np.array(pil_image)
+
+    # Calculate scaling factors
+    scale_x = img_width / ORIGINAL_WIDTH
+    scale_y = img_height / ORIGINAL_HEIGHT
+    image_center_x =[]
+    image_center_y = 
+
+    karts = []
+    for detection in frame_detections:
+      class_id, track_id, x1, y1, x2, y2 = detection
+      class_id = int(class_id)
+      track_id = int(track_id)
+
+      if class_id != 1:
+        continue
+
+      # Scale coordinates to fit the current image size
+      x1_scaled = int(x1 * scale_x)
+      y1_scaled = int(y1 * scale_y)
+      x2_scaled = int(x2 * scale_x)
+      y2_scaled = int(y2 * scale_y)
+
+      # Skip if bounding box is too small
+      if (x2_scaled - x1_scaled) < min_box_size or (y2_scaled - y1_scaled) < min_box_size:
+        continue
+
+      # skip if not within image (out of bounds check)
+      if x2_scaled < 0 or x1_scaled > img_width or y2_scaled < 0 or y1_scaled > img_height:
+        continue
+
+      karts.append()
+
+      
+
+  
 
 
 def extract_track_info(info_path: str) -> str:
@@ -166,7 +210,11 @@ def extract_track_info(info_path: str) -> str:
         Track name as a string
     """
 
-    raise NotImplementedError("Not implemented")
+    # Read the info.json file
+    with open(info_path) as f:
+      info = json.load(f)
+
+    return info['track']
 
 
 def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img_height: int = 100) -> list:
