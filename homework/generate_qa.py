@@ -255,14 +255,36 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
     Returns:
         List of dictionaries, each containing a question and answer
     """
+    with open(info_path) as f:
+      info = json.load(f)
+
+    qa_pairs = []
     # 1. Ego car question
     # What kart is the ego car?
+    qa_pairs.append(
+      {
+        "question": "What kart is the ego car?",
+        "answer": info['karts'][view_index]
+      }
+    )
 
     # 2. Total karts question
     # How many karts are there in the scenario?
+    qa_pairs.append(
+      {
+        "question": "How many karts are there in the scenario?",
+        "answer": len(info['karts'])
+      }
+    )
 
     # 3. Track information questions
     # What track is this?
+    qa_pairs.append(
+      {
+        "qusetion": "What track is this?",
+        "answer": extract_track_info(info_path)
+      }
+    )
 
     # 4. Relative position questions for each kart
     # Is {kart_name} to the left or right of the ego car?
