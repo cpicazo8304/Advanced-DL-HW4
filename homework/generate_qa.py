@@ -298,27 +298,83 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
     num_front = 0
     num_behind = 0
     for kart in karts:
-      kart_cx, kart_yx = kart['center']
+      kart_cx, kart_cy = kart['center']
+      kart_name = kart['kart_name']
+
       # ask left or right of ego car
       if kart_cx < ego_cx:
         num_left += 1
-        qa_pairs.append(
-          {
-            "question": 
-          }
-        )
+        answer1 = 'left'
       else:
+        num_right += 1
+        answer1 = 'right'
 
+      qa_pairs.append(
+        {
+          "question": f"Is {kart_name} to the left or right of the ego car?",
+          "answer": answer1
+        }
+      )
 
       # ask in front of or behind ego car
+      if kart_cy < ego_cy:
+        num_behind += 1
+        answer2 = 'front'
+      else:
+        num_front += 1
+        answer2 = 'behind'
+
+      qa_pairs.append(
+        {
+          "question": f"Is {kart_name} in front of or behind the ego car?",
+          "answer": answer2
+        }
+      )
+
+      # Where is {kart_name} relative to the ego car?
+      qa_pairs.append(
+        {
+          "question": f"Where is {kart_name} relative to the ego car?",
+          "answer": f"{answer1} and {answer2}"
+        }
+      )
 
     # 5. Counting questions
-    # How many karts are to the left of the ego car?
-    # How many karts are to the right of the ego car?
-    # How many karts are in front of the ego car?
-    # How many karts are behind the ego car?
 
-    raise NotImplementedError("Not implemented")
+    # How many karts are to the left of the ego car?
+    qa_pairs.append(
+      {
+        "question": "How many karts are to the left of the ego car?",
+        "answer": num_left
+      }
+    )
+
+    # How many karts are to the right of the ego car?
+    qa_pairs.append(
+      {
+        "question": "How many karts are to the right of the ego car?",
+        "answer": num_right
+      }
+    )
+
+    # How many karts are in front of the ego car?
+    qa_pairs.append(
+      {
+        "question": "How many karts are in front of the ego car?",
+        "answer": num_front
+      }
+    )
+
+    # How many karts are behind the ego car?
+    qa_pairs.append(
+      {
+        "question": "How many karts are behind the ego car?",
+        "answer": num_behind
+      }
+    )
+
+    return qa_pairs
+
 
 
 def check_qa_pairs(info_file: str, view_index: int):
