@@ -283,7 +283,7 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
     qa_pairs.append(
       {
         "question": "How many karts are there in the scenario?",
-        "answer": len(info['karts']),
+        "answer": str(len(info['karts'])),
         "image_file": image_file
       }
     )
