@@ -242,7 +242,7 @@ def extract_track_info(info_path: str) -> str:
     return info['track']
 
 
-def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img_height: int = 100) -> list:
+def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img_height: int = 100, split: str=None) -> list:
     """
     Generate question-answer pairs for a given view.
 
@@ -258,13 +258,23 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
     with open(info_path) as f:
       info = json.load(f)
 
+    # Find corresponding image file
+    info_path = Path(info_path)
+    base_name = info_path.stem.replace("_info", "")
+    if split:
+      image_file = f"{split}/{base_name}_{view_index:02d}_im.jpg"
+    else:
+      image_file = str(list(info_path.parent.glob(f"{base_name}_{view_index:02d}_im.jpg"))[0])
+    image_file = str(image_file)
+
     qa_pairs = []
     # 1. Ego car question
     # What kart is the ego car?
     qa_pairs.append(
       {
         "question": "What kart is the ego car?",
-        "answer": info['karts'][view_index]
+        "answer": info['karts'][view_index],
+        "image_file": image_file
       }
     )
 
@@ -273,7 +283,8 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
     qa_pairs.append(
       {
         "question": "How many karts are there in the scenario?",
-        "answer": len(info['karts'])
+        "answer": len(info['karts']),
+        "image_file": image_file
       }
     )
 
@@ -282,7 +293,8 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
     qa_pairs.append(
       {
         "question": "What track is this?",
-        "answer": extract_track_info(info_path)
+        "answer": extract_track_info(info_path),
+        "image_file": image_file
       }
     )
 
@@ -312,7 +324,8 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
       qa_pairs.append(
         {
           "question": f"Is {kart_name} to the left or right of the ego car?",
-          "answer": answer1
+          "answer": answer1,
+        "image_file": image_file
         }
       )
 
@@ -327,7 +340,8 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
       qa_pairs.append(
         {
           "question": f"Is {kart_name} in front of or behind the ego car?",
-          "answer": answer2
+          "answer": answer2,
+        "image_file": image_file
         }
       )
 
@@ -335,7 +349,8 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
       qa_pairs.append(
         {
           "question": f"Where is {kart_name} relative to the ego car?",
-          "answer": f"{answer1} and {answer2}"
+          "answer": f"{answer1} and {answer2}",
+          "image_file": image_file
         }
       )
 
@@ -345,7 +360,8 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
     qa_pairs.append(
       {
         "question": "How many karts are to the left of the ego car?",
-        "answer": num_left
+        "answer": str(num_left),
+        "image_file": image_file
       }
     )
 
@@ -353,7 +369,8 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
     qa_pairs.append(
       {
         "question": "How many karts are to the right of the ego car?",
-        "answer": num_right
+        "answer": str(num_right),
+        "image_file": image_file
       }
     )
 
@@ -361,7 +378,8 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
     qa_pairs.append(
       {
         "question": "How many karts are in front of the ego car?",
-        "answer": num_front
+        "answer": str(num_front),
+        "image_file": image_file
       }
     )
 
@@ -369,12 +387,32 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
     qa_pairs.append(
       {
         "question": "How many karts are behind the ego car?",
-        "answer": num_behind
+        "answer": str(num_behind),
+        "image_file": image_file
       }
     )
 
     return qa_pairs
 
+
+def generate_all_qa(data_dir: str):
+    # get all info_json
+    split = Path(data_dir).name
+    data_path = Path(data_dir)
+    info_files = list(data_path.glob("*_info.json"))
+    all_qa_pairs = []
+    for info_path in info_files:
+      with open(info_path) as f:
+        info = json.load(f)
+
+      # go through each possible view_index and generate questions
+      for view_index in range(len(info['karts'])):
+        qa_pairs = generate_qa_pairs(str(info_path), view_index, split=split)
+        all_qa_pairs.extend(qa_pairs)
+
+    output_file = f"{data_dir}/all_qa_pairs.json"
+    with open(output_file, "w") as f:
+        json.dump(all_qa_pairs, f)
 
 
 def check_qa_pairs(info_file: str, view_index: int):
@@ -418,10 +456,8 @@ Usage Example: Visualize QA pairs for a specific file and view:
 
 You probably need to add additional commands to Fire below.
 """
-
-
 def main():
-    fire.Fire({"check": check_qa_pairs})
+    fire.Fire({"check": check_qa_pairs, "generate": generate_all_qa})
 
 
 if __name__ == "__main__":
