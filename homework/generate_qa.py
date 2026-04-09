@@ -281,7 +281,7 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
     # What track is this?
     qa_pairs.append(
       {
-        "qusetion": "What track is this?",
+        "question": "What track is this?",
         "answer": extract_track_info(info_path)
       }
     )
@@ -290,6 +290,27 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
     # Is {kart_name} to the left or right of the ego car?
     # Is {kart_name} in front of or behind the ego car?
     # Where is {kart_name} relative to the ego car?
+    karts = extract_kart_objects(info_path, view_index, img_width, img_height)
+    ego_cx = img_width / 2
+    ego_cy = img_height / 2
+    num_left = 0
+    num_right = 0
+    num_front = 0
+    num_behind = 0
+    for kart in karts:
+      kart_cx, kart_yx = kart['center']
+      # ask left or right of ego car
+      if kart_cx < ego_cx:
+        num_left += 1
+        qa_pairs.append(
+          {
+            "question": 
+          }
+        )
+      else:
+
+
+      # ask in front of or behind ego car
 
     # 5. Counting questions
     # How many karts are to the left of the ego car?
