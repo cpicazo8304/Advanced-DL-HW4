@@ -103,6 +103,7 @@ def generate_all_captions(data_dir: str):
       captions = generate_caption(str(info_path), view_index, split=split)
       all_capt_pairs.extend(captions)
 
+  print(f"Generated {len(all_capt_pairs)} captions.")
   output_file = f"{data_dir}/all_captions.json"
   with open(output_file, "w") as f:
       json.dump(all_capt_pairs, f)
