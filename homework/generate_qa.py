@@ -325,23 +325,22 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
         {
           "question": f"Is {kart_name} to the left or right of the ego car?",
           "answer": answer1,
-        "image_file": image_file
+          "image_file": image_file
         }
       )
 
-      # ask in front of or behind ego car
       if kart_cy < ego_cy:
-        num_behind += 1
-        answer2 = 'front'
+          num_front += 1
+          answer2 = 'front'
       else:
-        num_front += 1
-        answer2 = 'behind'
+          num_behind += 1
+          answer2 = 'back'
 
       qa_pairs.append(
         {
           "question": f"Is {kart_name} in front of or behind the ego car?",
           "answer": answer2,
-        "image_file": image_file
+          "image_file": image_file
         }
       )
 
@@ -349,7 +348,7 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
       qa_pairs.append(
         {
           "question": f"Where is {kart_name} relative to the ego car?",
-          "answer": f"{answer1} and {answer2}",
+          "answer": f"{answer2} and {answer1}",
           "image_file": image_file
         }
       )
