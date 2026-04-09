@@ -83,7 +83,7 @@ class CaptionDatasetForTraining(Dataset):
         image = Image.open(item["image_path"]).convert("RGB")
         pixel_values = self.image_processor(image)
         text = item["caption"] + self.processor.tokenizer.eos_token
-        text_inputs = self.processor(text=text, return_tensors="pt", padding=True, truncation=True)
+        text_inputs = self.processor.tokenizer(text, return_tensors="pt", padding=True, truncation=True)
         input_ids = text_inputs["input_ids"].squeeze(0).long()
         attention_mask = text_inputs["attention_mask"].squeeze(0)
         return {
@@ -187,9 +187,11 @@ class CLIP(nn.Module):
         text_outputs = self.text_encoder(input_ids=input_ids, attention_mask=attention_mask)
 
         # get pooled outputs
-        vision_features = vision_outputs.pooler_output
-        text_features = text_outputs.pooler_output
-
+        vision_features = vision_outputs.last_hidden_state.mean(dim=1)
+        tmask = attention_mask.unsqueeze(-1).float()
+        text_features = (text_outputs.last_hidden_state * tmask).sum(dim=1) / tmask.sum(dim=1)
+        vision_features = vision_features.to(self.vision_proj.weight.dtype)
+        text_features = text_features.to(self.text_proj.weight.dtype)
         # projection
         vision_features = self.vision_proj(vision_features)
         text_features = self.text_proj(text_features)
@@ -249,7 +251,7 @@ def get_target_modules_for_lora(model: nn.Module) -> list[str]:
 def train(
     data_dir: Path | None = None,
     output_dir: str = "clip",
-    num_train_epochs: float = 0.05,  # for debugging purpose, increase this once the dry run works
+    num_train_epochs: float = 1.5,  # for debugging purpose, increase this once the dry run works
     per_device_train_batch_size: int = 1024,
     gradient_accumulation_steps: int = 1,
     learning_rate: float = 5e-4,
