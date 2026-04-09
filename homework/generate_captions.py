@@ -83,7 +83,8 @@ class CaptionDatasetForTraining(Dataset):
         image = Image.open(item["image_path"]).convert("RGB")
         pixel_values = self.image_processor(image)
         text = item["caption"] + self.processor.tokenizer.eos_token
-        text_inputs = self.processor.tokenizer(text, return_tensors="pt", padding=True, truncation=True)        input_ids = text_inputs["input_ids"].squeeze(0).long()
+        text_inputs = self.processor.tokenizer(text, return_tensors="pt", padding=True, truncation=True)
+        input_ids = text_inputs["input_ids"].squeeze(0).long()
         attention_mask = text_inputs["attention_mask"].squeeze(0)
         return {
             "pixel_values": pixel_values,
