@@ -101,8 +101,10 @@ class CLIP(nn.Module):
         super().__init__()
         self.vision_encoder = vision_encoder
         self.text_encoder = text_encoder
-        # TODO: implement the rest components
-        raise NotImplementedError("Not implemented")
+        self.vision_proj = nn.Linear(vision_encoder.config.hidden_size, proj_dim)
+        self.text_proj = nn.Linear(text_encoder.config.hidden_size, proj_dim)
+        self.temperature = nn.Parameter(torch.tensor(temperature))
+        
 
     def encode_image(self, image: torch.Tensor) -> torch.Tensor:
         return self.vision_encoder(image)
@@ -180,7 +182,23 @@ class CLIP(nn.Module):
         Returns:
             TODO: think about the what values should be returned
         """
-        raise NotImplementedError("Not implemented")
+        # encode
+        vision_outputs = self.vision_encoder(pixel_values)
+        text_outputs = self.text_encoder(input_ids=input_ids, attention_mask=attention_mask)
+
+        # get pooled outputs
+        vision_features = vision_outputs.pooler_output
+        text_features = text_outputs.pooler_output
+
+        # projection
+        vision_features = self.vision_proj(vision_features)
+        text_features = self.text_proj(text_features)
+
+        # normalize
+        vision_features = nn.functional.normalize(vision_features, dim=-1)
+        text_features = nn.functional.normalize(text_features, dim=-1)
+
+        return (vision_features, text_features, self.temperature)
 
 
 def compute_clip_loss(
@@ -199,7 +217,19 @@ def compute_clip_loss(
     Returns:
         The loss for the CLIP model.
     """
-    raise NotImplementedError("Not implemented")
+    image_features, text_features, temperature = outputs
+
+    # similarity matrix (N x N)
+    logits = torch.matmul(image_features, text_features.T) / temperature
+
+    # labels are just 0, 1, 2, ... N-1 (each image matches its own caption)
+    clip_labels = torch.arange(len(logits), device=logits.device)
+
+    # cross entropy both ways
+    loss_i = nn.functional.cross_entropy(logits, clip_labels)
+    loss_t = nn.functional.cross_entropy(logits.T, clip_labels)
+
+    return (loss_i + loss_t) / 2
 
 
 def get_target_modules_for_lora(model: nn.Module) -> list[str]:
