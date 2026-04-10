@@ -23,45 +23,65 @@ def generate_caption(info_path: str, view_index: int, img_width: int = 150, img_
       image_file = str(list(info_path.parent.glob(f"{base_name}_{view_index:02d}_im.jpg"))[0])
     image_file = str(image_file)
 
+    karts = extract_kart_objects(info_path, view_index, img_width, img_height)
+
+    if karts is None or len(karts) == 0:
+      return None
+
+
     captions = []
-    # 1. Ego car
-    # {kart_name} is the ego car.
-    captions.append(
-      {
-        "caption": f"{info['karts'][view_index]} is the ego car.",
-        "image_file": image_file
-      }
-    )
+
+    ego_kart = next((k for k in karts if k['is_center_kart']), None)
+
+    # check if there is an ego kart (skip image if not)
+    if ego_kart is None:
+      return None
+    else:
+      # 1. Ego car
+      # {kart_name} is the ego car.
+      captions.append(
+        {
+          "caption": f"{info['karts'][view_index]} is the ego car.",
+          "image_file": image_file
+        }
+      )
 
     # 2. Counting
     # There are {num_karts} karts in the scenario.
-    captions.append(
-      {
-        "caption": f"There are {str(len(info['karts']))} karts in the scene.",
-        "image_file": image_file
-      }
-    )
+    num_karts = len(info['karts'])
+    if num_karts != 0:
+      captions.append(
+        {
+          "caption": f"There are {str(num_karts)} karts in the scene.",
+          "image_file": image_file
+        }
+      )
 
     # 3. Track name
     # The track is {track_name}.
-    captions.append(
-      {
-        "caption": f"The track is {info['track']}.",
-        "image_file": image_file
-      }
-    )
+    track_name = info['info']
+    if not (track_name is None or track_name == ""):
+      captions.append(
+        {
+          "caption": f"The track is {track_name}.",
+          "image_file": image_file
+        }
+      )
 
     # 4. Relative position
     # {kart_name} is {position} of the ego car.
-    karts = extract_kart_objects(info_path, view_index, img_width, img_height)
     ego_cx = img_width / 2
     ego_cy = img_height / 2
     for kart in karts:
       kart_cx, kart_cy = kart['center']
       kart_name = kart['kart_name']
 
+      if kart_cx == ego_cx or kart_cy == ego_cy:
+        # skip since it is the same kart as the ego kart
+        continue
+
       # check for left or right of ego car
-      if kart_cx < ego_cx:
+      if kart_cx <= ego_cx:
         answer1 = 'left'
       else:
         answer1 = 'right'
@@ -101,7 +121,8 @@ def generate_all_captions(data_dir: str):
     # go through each possible view_index and generate questions
     for view_index in range(len(info['karts'])):
       captions = generate_caption(str(info_path), view_index, split=split)
-      all_capt_pairs.extend(captions)
+      if captions is not None:
+        all_capt_pairs.extend(captions)
 
   print(f"Generated {len(all_capt_pairs)} captions.")
   output_file = f"{data_dir}/all_captions.json"
