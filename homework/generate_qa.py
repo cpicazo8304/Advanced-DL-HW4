@@ -5,6 +5,7 @@ import fire
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image, ImageDraw
+from torch import NoneType
 
 # Define object type mapping
 OBJECT_TYPES = {
@@ -266,45 +267,65 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
     else:
       image_file = str(list(info_path.parent.glob(f"{base_name}_{view_index:02d}_im.jpg"))[0])
     image_file = str(image_file)
+    
+    karts = extract_kart_objects(info_path, view_index, img_width, img_height)
 
-    qa_pairs = []
-    # 1. Ego car question
-    # What kart is the ego car?
-    qa_pairs.append(
-      {
-        "question": "What kart is the ego car?",
-        "answer": info['karts'][view_index],
-        "image_file": image_file
-      }
-    )
+    # check if there are any karts (if not, skip image)
+    if karts is None or len(karts) == 0:
+      return None
+
+    ego_kart = next((k for k in karts if k['is_center_kart']), None)
+
+    # check if there is an ego kart (skip image if not)
+    if ego_kart is None:
+      return None
+    else:
+
+      qa_pairs = []
+      # 1. Ego car question
+      # What kart is the ego car?
+      qa_pairs.append(
+        {
+          "question": "What kart is the ego car?",
+          "answer": ego_kart['kart_name'],
+          "image_file": image_file
+        }
+      )
 
     # 2. Total karts question
     # How many karts are there in the scenario?
-    qa_pairs.append(
-      {
-        "question": "How many karts are there in the scenario?",
-        "answer": str(len(info['karts'])),
-        "image_file": image_file
-      }
-    )
+    num_karts = len(info['karts'])
+    if num_karts == 0:
+      return None
+    else:
+      qa_pairs.append(
+        {
+          "question": "How many karts are there in the scenario?",
+          "answer": str(num_karts),
+          "image_file": image_file
+        }
+      )
 
     # 3. Track information questions
     # What track is this?
-    qa_pairs.append(
-      {
-        "question": "What track is this?",
-        "answer": extract_track_info(info_path),
-        "image_file": image_file
-      }
-    )
+    track = extract_track_info(info_path)
+    
+    if track == "" or track is None:
+      return None
+    else:
+      qa_pairs.append(
+        {
+          "question": "What track is this?",
+          "answer": extract_track_info(info_path),
+          "image_file": image_file
+        }
+      )
 
     # 4. Relative position questions for each kart
     # Is {kart_name} to the left or right of the ego car?
     # Is {kart_name} in front of or behind the ego car?
     # Where is {kart_name} relative to the ego car?
-    karts = extract_kart_objects(info_path, view_index, img_width, img_height)
-    ego_cx = img_width / 2
-    ego_cy = img_height / 2
+    ego_cx, ego_cy = ego_kart['center']
     num_left = 0
     num_right = 0
     num_front = 0
@@ -313,8 +334,12 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
       kart_cx, kart_cy = kart['center']
       kart_name = kart['kart_name']
 
+      if kart_cx == ego_cx and kart_cy == ego_cy:
+        # ego kart so skip iteration
+        continue
+
       # ask left or right of ego car
-      if kart_cx < ego_cx:
+      if kart_cx <= ego_cx:
         num_left += 1
         answer1 = 'left'
       else:
@@ -355,41 +380,45 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
 
     # 5. Counting questions
 
-    # How many karts are to the left of the ego car?
-    qa_pairs.append(
-      {
-        "question": "How many karts are to the left of the ego car?",
-        "answer": str(num_left),
-        "image_file": image_file
-      }
-    )
+    if num_left != 0:
+      # How many karts are to the left of the ego car?
+      qa_pairs.append(
+        {
+          "question": "How many karts are to the left of the ego car?",
+          "answer": str(num_left),
+          "image_file": image_file
+        }
+      )
 
-    # How many karts are to the right of the ego car?
-    qa_pairs.append(
-      {
-        "question": "How many karts are to the right of the ego car?",
-        "answer": str(num_right),
-        "image_file": image_file
-      }
-    )
+    if num_right != 0:
+      # How many karts are to the right of the ego car?
+      qa_pairs.append(
+        {
+          "question": "How many karts are to the right of the ego car?",
+          "answer": str(num_right),
+          "image_file": image_file
+        }
+      )
 
-    # How many karts are in front of the ego car?
-    qa_pairs.append(
-      {
-        "question": "How many karts are in front of the ego car?",
-        "answer": str(num_front),
-        "image_file": image_file
-      }
-    )
+    if num_front != 0:
+      # How many karts are in front of the ego car?
+      qa_pairs.append(
+        {
+          "question": "How many karts are in front of the ego car?",
+          "answer": str(num_front),
+          "image_file": image_file
+        }
+      )
 
-    # How many karts are behind the ego car?
-    qa_pairs.append(
-      {
-        "question": "How many karts are behind the ego car?",
-        "answer": str(num_behind),
-        "image_file": image_file
-      }
-    )
+    if num_behind != 0:
+      # How many karts are behind the ego car?
+      qa_pairs.append(
+        {
+          "question": "How many karts are behind the ego car?",
+          "answer": str(num_behind),
+          "image_file": image_file
+        }
+      )
 
     return qa_pairs
 
@@ -407,7 +436,8 @@ def generate_all_qa(data_dir: str):
       # go through each possible view_index and generate questions
       for view_index in range(len(info['karts'])):
         qa_pairs = generate_qa_pairs(str(info_path), view_index, split=split)
-        all_qa_pairs.extend(qa_pairs)
+        if qa_pairs is not None:
+          all_qa_pairs.extend(qa_pairs)
 
     output_file = f"{data_dir}/all_qa_pairs.json"
     with open(output_file, "w") as f:
