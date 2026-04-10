@@ -68,9 +68,9 @@ def generate_caption(info_path: str, view_index: int, img_width: int = 150, img_
 
       # check for front or back of ego car
       if kart_cy < ego_cy:
-          answer2 = 'front'
+          answer2 = 'in front of'
       else:
-          answer2 = 'back'
+          answer2 = 'behind'
 
       captions.append(
         {
@@ -81,7 +81,7 @@ def generate_caption(info_path: str, view_index: int, img_width: int = 150, img_
 
       captions.append(
         {
-          "caption": f"{kart_name} is {answer2} of the ego car.",
+          "caption": f"{kart_name} is {answer2} the ego car.",
           "image_file": image_file
         }
       )
