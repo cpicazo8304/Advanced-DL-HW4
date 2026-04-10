@@ -59,7 +59,7 @@ def generate_caption(info_path: str, view_index: int, img_width: int = 150, img_
 
     # 3. Track name
     # The track is {track_name}.
-    track_name = info['info']
+    track_name = info['track']
     if not (track_name is None or track_name == ""):
       captions.append(
         {
