@@ -294,10 +294,8 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
 
     # 2. Total karts question
     # How many karts are there in the scenario?
-    num_karts = len(info['karts'])
-    if num_karts == 0:
-      return None
-    else:
+    num_karts = len(karts)
+    if num_karts != 0:
       qa_pairs.append(
         {
           "question": "How many karts are there in the scenario?",
@@ -334,7 +332,7 @@ def generate_qa_pairs(info_path: str, view_index: int, img_width: int = 150, img
       kart_cx, kart_cy = kart['center']
       kart_name = kart['kart_name']
 
-      if kart_cx == ego_cx and kart_cy == ego_cy:
+      if kart['is_center_kart']:
         # ego kart so skip iteration
         continue
 
