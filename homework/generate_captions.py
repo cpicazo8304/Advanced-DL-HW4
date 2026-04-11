@@ -48,7 +48,7 @@ def generate_caption(info_path: str, view_index: int, img_width: int = 150, img_
 
     # 2. Counting
     # There are {num_karts} karts in the scenario.
-    num_karts = len(info['karts'])
+    num_karts = len(karts)
     if num_karts != 0:
       captions.append(
         {
@@ -70,13 +70,12 @@ def generate_caption(info_path: str, view_index: int, img_width: int = 150, img_
 
     # 4. Relative position
     # {kart_name} is {position} of the ego car.
-    ego_cx = img_width / 2
-    ego_cy = img_height / 2
+    ego_cx, ego_cy = ego_kart['center']
     for kart in karts:
       kart_cx, kart_cy = kart['center']
       kart_name = kart['kart_name']
 
-      if kart_cx == ego_cx or kart_cy == ego_cy:
+      if kart['is_center_kart']:
         # skip since it is the same kart as the ego kart
         continue
 
