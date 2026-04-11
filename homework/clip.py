@@ -192,6 +192,7 @@ class CLIP(nn.Module):
         text_features = (text_outputs.last_hidden_state * tmask).sum(dim=1) / tmask.sum(dim=1)
         vision_features = vision_features.to(self.vision_proj.weight.dtype)
         text_features = text_features.to(self.text_proj.weight.dtype)
+
         # projection
         vision_features = self.vision_proj(vision_features)
         text_features = self.text_proj(text_features)
@@ -251,7 +252,7 @@ def get_target_modules_for_lora(model: nn.Module) -> list[str]:
 def train(
     data_dir: Path | None = None,
     output_dir: str = "clip",
-    num_train_epochs: float = 2,  # for debugging purpose, increase this once the dry run works
+    num_train_epochs: float = 3,  # for debugging purpose, increase this once the dry run works
     per_device_train_batch_size: int = 1024,
     gradient_accumulation_steps: int = 1,
     learning_rate: float = 5e-4,
